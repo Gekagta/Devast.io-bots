@@ -69,61 +69,313 @@ class BotManager:
         else:
             await self.CreateBot(nickname)
     async def Update(self):
+        print('test')
         await asyncio.sleep(10)
     async def Error(self, bot_id: int):
         self.bots.pop(bot_id)
         for i in range(len(self.bots)):
             self.bots[i].id = i
+
+    #api
+
+    async def OnTeamName(self,data, bot_id: int):
+        print('OnTeamName')
+        print(data)
+    async def OnAlert(self,data, bot_id: int):
+        print('OnAlert')
+        print(data)
+    async def OnNicknamesToken(self,data, bot_id: int):
+        print('OnNicknamesToken')
+        print(data)
+    async def OnNewPlayer(self,data, bot_id: int):
+        print('OnNewPlayer')
+        player_id = data[1]
+        player_token_id = data[2]
+        player_nickname = data[3]
+        player_skin = data[4]
+        player_ghoul = data[5]
+
+    async def OnChatMessage(self,data, bot_id: int):
+        print('OnChatMessage')
+        player_id = data[1]
+        text = data[2]
+
     async def OnPlayerDeath(self,data: bytes, bot_id: int):
         print(f'{bot_id} OnPlayerDeath')
-        pass
     async def OnHandshake(self, data: bytes, ui8: bytearray, bot_id: int):
         print(f'{bot_id} OnHandshake')
         ui16 = struct.unpack(f'{len(data)//2}H', data)
-        duration = ui16[3] << 5
-        print(f'WORLD.Player.id = {ui8[1]}')
-        print(f'World.playerNumber = {ui8[4]}')
-        print(f'World.gameMode = {ui8[5]}')
-        print(f'Duration = {duration}')
+        my_player_id = ui8[1]
+        time_duration = ui16[3] << 5
+        units_per_player = ui16[1]
+        player_number = ui8[4]
+        gamemode = ui8[5]
+        len = (len(data) - 8) / 10
+        i = 0
+        info = 8
+        add_info = 4
+        while (i < len):
+            player_id = ui8[info]
+            player_ghoul = ui8[info + 4]
+            player_token_id = ui16[add_info + 3]
+            player_score = ui16[add_info + 4]
+            info += 10,
+            add_info += 5
+            i += 1
     async def OnUnits(data: bytes, ui8: bytearray, bot_id: int):
         print(f'{bot_id} OnUnits')
         ui16 = struct.unpack(f'{len(data)//2}H', data)
-        len_objects = (len(ui8) - 2) // 18
-        for i in range(len_objects):
-            isRef8 = 2 + i * 18
-            isRef16 = 1 + i * 9
-            pid = ui8[isRef8]
-            uid = ui8[isRef8 + 1]
-            type_ = ui8[isRef8 + 3] 
-            state = ui16[isRef16 + 2]  
-            id_ = ui16[isRef16 + 3] 
+        len = (len(ui8) - 2) // 18
+        isRef8 = 2
+        isRef16 = 1
+        i = 0
+        while (i < len):
+            pid = ui8[isRef8] #like player id
+            uid = ui8[isRef8 + 1] #like entity id (ghoul and etc)
+            type = ui8[isRef8 + 3]
+            state = ui16[isRef16 + 2]
+            id = ui16[isRef16 + 3]
             extra = ui16[isRef16 + 8]
-            x_position = ui16[isRef16 + 4]  
-            y_position = ui16[isRef16 + 5]  
-            x_position2 = ui16[isRef16 + 6]  
-            y_position2 = ui16[isRef16 + 7]  
-            print(f'x1,y1: {x_position},{y_position}')
-            print(f'x2,y2: {x_position2},{y_position2}')
-            print(f'pid, uid: {pid}, {uid}')
+            #create entity
+            pos_x = ui16[isRef16 + 4] #world pos
+            pos_y = ui16[isRef16 + 5] #world pos
+            unk_pos_x = ui16[isRef16 + 6] #map pos maybe?
+            unk_pos_y = ui16[isRef16 + 7] #map pos maybe?
+            rotation = ui8[isRef8 + 2]
+            #make update entity pos here!
+
+            isRef8  += 18
+            isRef16 += 9
+            i += 1
+       
     async def OnAreas(self, ui8: bytearray, bot_id: int):
         print(f'{bot_id} OnAreas')
     async def OnTeamCreated(self,data, bot_id: int):
         print(f'OnTeamCreated {data}')
         if data[3] == 'BOT':
             self.bots[bot_id].wantcommand = f'[30,{data[1]}]'
+    async def OnOldVersion(data: bytes, bot_id: int):
+        print(f'OnOldVersion {data}')
+        ui16 = struct.unpack(f'{len(data)//2}H', data)
+        error_id = ui16[1]
+    async def OnServerFull(bot_id: int):
+        print(f'OnServerFull')
+    async def OnPlayerDie(self, ui8: bytearray, bot_id: int):
+        print('OnPlayerDie')
+        killer = (ui8[1] << 8) + ui8[2]
+    async def OnOtherDie(self, ui8: bytearray, bot_id: int):
+        print('OnOtherDie')
+        player_id = ui8[1]
+    async def OnFailRestoreSession(self, bot_id: int):
+        print('OnFailRestoreSession')
+    async def OnStoleYourSession(self, bot_id: int):
+        print('OnStoleYourSession')
+    async def OnMute(self, ui8: bytearray, bot_id: int):
+        print('OnMute')
+        delay = ui8[1]
+    async def OnLeaderboard(self, data: bytes, ui8: bytearray, bot_id: int):
+        print('OnLeaderboard')
+        ui16 = struct.unpack(f'{len(data)//2}H', data)
+        for i in range(10):
+            player_id = ui8[2 + (i * 4)]
+            player_score = ui16[2 + (i * 2)]
+            player_karma = ui8[3 + (i * 4)]
+    async def OnKickInactivity(self, bot_id: int):
+        print('OnKickInactivity')
+    async def OnNotification(self, ui8: bytearray, bot_id: int):
+        print('OnNotification')
+        player_id = ui8[1]
+        notification = ui8[2] >> 2
+        notification_level = ui8[2] & 3
+    async def OnGauges(self, ui8: bytearray, bot_id: int): #like hud info!
+        print('OnGauges')
+        life  = ui8[1]
+        food = ui8[2]
+        cold = ui8[3]
+        stamina = ui8[4]
+        radiation = ui8[5]
+    async def OnScore(self, data: bytes, bot_id: int):
+        print('OnScore')
+        ui16 = struct.unpack(f'{len(data)//2}H', data)
+        experience = (ui16[1] << 16) + ui16[2] 
+    async def OnPlayerHit(self, ui8: bytearray, bot_id: int): #like hud info!
+        print('OnPlayerHit')
+        player_id = ui8[1]
+        angle = ui8[2] #hurt angle like ((angle * 2) * pi) / 255
+    async def OnFullInventory(self, ui8: bytearray, bot_id: int): #like hud info!
+        print('OnFullInventory')
+        i = 1
+        j = 0
+        while (i < len(ui8)): #inventory items
+            item_id = ui8[i]
+            #inventory[1] = ui8[i + 1] #unknow
+            #inventory[2] = ui8[i + 2] #unknow
+            #inventory[3] = ui8[i + 3] #unknow
+            #inventory[0] = item_id #unknow
+            i += 4
+            j += 1
+    async def OnDeleteItem(self, ui8: bytearray, bot_id: int): #like hud info!
+        print('OnDeleteItem')
+        #for inventory
+        #if inventory[i][0] == ui8[1] and ... and ... and ...:
+        #inventory[i][0] = 0 #unknow
+        #inventory[i][1] = 0 #unknow
+        #inventory[i][2] = 0 #unknow
+        #inventory[i][3] = 0 #unknow
+    #api end
     async def Callbacks(self, data: bytes, bot_id: int):
-       # print(f'callback from {bot_id}')
+        # print(f'callback from {bot_id}')
         ui8 = bytearray(data)
         if data[0] in caseMap:
             case_number = caseMap[data[0]]
-            if case_number == newCaseNumbers[3]:
-                await self.OnPlayerDeath(data,bot_id)
+            if case_number == newCaseNumbers[0]:
+                await self.OnUnits(data, ui8, bot_id)
+            elif case_number == newCaseNumbers[1]:
+                await self.OnOldVersion(data, bot_id)
+            elif case_number == newCaseNumbers[2]:
+                await self.OnServerFull(bot_id)
+            elif case_number == newCaseNumbers[3]:
+                await self.OnPlayerDie(ui8, bot_id)
+            elif case_number == newCaseNumbers[4]:
+                await self.OnOtherDie(ui8, bot_id)
+            elif case_number == newCaseNumbers[5]:
+                await self.OnFailRestoreSession(bot_id)
+            elif case_number == newCaseNumbers[6]:
+                await self.OnStoleYourSession(bot_id)
+            elif case_number == newCaseNumbers[7]:
+                await self.OnMute(ui8, bot_id)
+            elif case_number == newCaseNumbers[8]:
+                await self.OnLeaderboard(data, ui8, bot_id)
             elif case_number == newCaseNumbers[9]:
-                await self.OnHandshake(data,ui8,bot_id)
-            elif case_number == newCaseNumbers[0]:
-                await self.OnUnits(data,ui8,bot_id)
+                await self.OnHandshake(data, ui8, bot_id)
+            elif case_number == newCaseNumbers[10]:
+                await self.OnKickInactivity(bot_id)
+            elif case_number == newCaseNumbers[11]:
+                await self.OnNotification(ui8, bot_id)
+            elif case_number == newCaseNumbers[12]:
+                await self.OnGauges(ui8, bot_id)
+            elif case_number == newCaseNumbers[13]:
+                await self.OnScore(data, bot_id)
+            elif case_number == newCaseNumbers[14]:
+                await self.OnPlayerHit(ui8, bot_id)
+            elif case_number == newCaseNumbers[15]:
+                await self.OnFullInventory(ui8, bot_id)
+            elif case_number == newCaseNumbers[16]:
+                await self.OnDeleteItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[17]:
+                await self.OnNewItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[18]:
+                await self.OnPlayerLife(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[19]:
+                await self.OnLifeDecreas(bot_id)
+            elif case_number == newCaseNumbers[20]:
+                await self.OnSelectedItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[21]:
+                await self.OnLifeStop(bot_id)
+            elif case_number == newCaseNumbers[22]:
+                await self.OnPlayerHeal(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[23]:
+                await self.OnStaminaIncrease(bot_id)
+            elif case_number == newCaseNumbers[24]:
+                await self.OnStaminaStop(bot_id)
+            elif case_number == newCaseNumbers[25]:
+                await self.OnStaminaDecrease(bot_id)
+            elif case_number == newCaseNumbers[26]:
+                await self.OnColdIncrease(bot_id)
+            elif case_number == newCaseNumbers[27]:
+                await self.OnColdStop(bot_id)
+            elif case_number == newCaseNumbers[28]:
+                await self.OnColdDecrease(bot_id)
+            elif case_number == newCaseNumbers[29]:
+                await self.OnPlayerStamina(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[30]:
+                await self.OnLifeIncrease(bot_id)
+            elif case_number == newCaseNumbers[31]:
+                await self.OnReplaceItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[32]:
+                await self.OnStackItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[33]:
+                await self.OnSplitItem(ui8, bot_id)
+            elif case_number == newCaseNumbers[34]:
+                await self.OnReplaceAmmo(ui8, bot_id)
+            elif case_number == newCaseNumbers[35]:
+                await self.OnStartInteraction(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[36]:
+                await self.OnInterruptInteraction(bot_id)
+            elif case_number == newCaseNumbers[37]:
+                await self.OnReplaceItemAndAmmo(ui8, bot_id)
+            elif case_number == newCaseNumbers[38]:
+                await self.OnBlueprint(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[39]:
+                await self.OnDay(bot_id)
+            elif case_number == newCaseNumbers[40]:
+                await self.OnNight(bot_id)
+            elif case_number == newCaseNumbers[41]:
+                await self.OnPlayerXp((ui8[1] << 8) + ui8[2], bot_id)
+            elif case_number == newCaseNumbers[42]:
+                await self.OnPlayerXpSkill(ui8, bot_id)
+            elif case_number == newCaseNumbers[43]:
+                await self.OnBoughtSkill(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[44]:
+                await self.OnStartCraft(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[45]:
+                await self.OnLostBuilding(bot_id)
+            elif case_number == newCaseNumbers[46]:
+                await self.OnOpenBuilding(ui8, bot_id)
+            elif case_number == newCaseNumbers[47]:
+                await self.OnNewFuelValue(ui8, bot_id)
+            elif case_number == newCaseNumbers[48]:
+                await self.OnRadOn(bot_id)
+            elif case_number == newCaseNumbers[49]:
+                await self.OnRadOff(bot_id)
+            elif case_number == newCaseNumbers[50]:
+                await self.OnWarmOn(bot_id)
+            elif case_number == newCaseNumbers[51]:
+                await self.OnWarmOff(bot_id)
+            elif case_number == newCaseNumbers[52]:
+                await self.OnWrongTool(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[53]:
+                await self.OnFullChest(ui8, bot_id)
+            elif case_number == newCaseNumbers[54]:
+                await self.OnAcceptedTeam(ui8[1], ui8[2], bot_id)
+            elif case_number == newCaseNumbers[55]:
+                await self.OnKickedTeam(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[56]:
+                await self.OnDeleteTeam(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[57]:
+                await self.OnJoinTeam(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[58]:
+                await self.OnTeamPosition(ui8, bot_id)
+            elif case_number == newCaseNumbers[59]:
+                await self.OnKarma(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[60]:
+                await self.OnBadKarma(ui8, bot_id)
             elif case_number == newCaseNumbers[61]:
-                await self.OnAreas(ui8,bot_id)
+                await self.OnAreas(ui8, bot_id)
+            elif case_number == newCaseNumbers[62]:
+                await self.OnWrongPassword(bot_id)
+            elif case_number == newCaseNumbers[63]:
+                await self.OnModdedGaugesValues(data, bot_id)
+            elif case_number == newCaseNumbers[64]:
+                await self.OnShakeExplosionState(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[65]:
+                await self.OnPlayerEat(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[66]:
+                await self.OnCitiesLocation(ui8, bot_id)
+            elif case_number == newCaseNumbers[67]:
+                await self.OnPoisened(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[68]:
+                await self.OnRepellent(ui8[1], ui8[2], bot_id)
+            elif case_number == newCaseNumbers[69]:
+                await self.OnLapadoine(ui8[1], ui8[2], bot_id)
+            elif case_number == newCaseNumbers[70]:
+                await self.OnResetDrug(ui8[1], ui8[2], bot_id)
+            elif case_number == newCaseNumbers[71]:
+                await self.OnDramaticChrono(ui8[1], bot_id)
+            elif case_number == newCaseNumbers[72]:
+                await self.FeederonWarmOn(bot_id)
+            elif case_number == newCaseNumbers[73]:
+                await self.FeederonWarmOff(bot_id)
         
 
 class Bot:
@@ -183,8 +435,19 @@ class Bot:
                         await self.controller.Callbacks(response, self.id)
                     else:
                         response = json.loads(response)
-                        if response[0] == 4:
+                        if response[0] == 0:
+                            await self.controller.OnChatMessage(response, self.id)
+                        elif response[0] == 1:
+                            await self.controller.OnNewPlayer(response, self.id)
+                        elif response[0] == 2:
+                            await self.controller.OnNicknamesToken(response, self.id)
+                        elif response[0] == 3:
+                            await self.controller.OnAlert(response, self.id)
+                        elif response[0] == 4:
                             await self.controller.OnTeamCreated(response, self.id)
+                        elif response[0] == 5:
+                            await self.controller.OnTeamName(response, self.id)
+                        
                 except Exception as e:
                     if not self.died:
                         print(f'{self.nickname} {self.id} died! Reconnecting...')
